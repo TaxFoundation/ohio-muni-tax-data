@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import urllib.request
+import csv
 
 # soup = BeautifulSoup()
 tax_data = urllib.request.urlopen(urllib.request.Request('https://www.columbus.gov/tax/PrintAllMunis.aspx'))
@@ -9,13 +10,12 @@ soup = BeautifulSoup(tax_data.read().decode('utf-8'), 'html.parser')
 final_data = []
 
 def fix_stupid_fractions(rate):
-  print(rate)
   if rate.find('/') > -1:
     numbers = rate.split(' of ')
     fraction = numbers[0].split('/')
-    return (float(fraction[0]) / float(fraction[1])) / 100
+    return format((float(fraction[0]) / float(fraction[1])) / 100, '.6f').rstrip('0').rstrip('.')
   else:
-    return float(rate) / 100
+    return format(float(rate) / 100, '.6f').rstrip('0').rstrip('.')
 
 addresses = soup.find_all('td', {'class': 'mucip_cont_address'})
 for address in addresses:
@@ -50,4 +50,9 @@ for address in addresses:
     'credit_limit': credit_limit
   })
 
-print(final_data)
+with open('ohio-data.csv', 'w') as csvfile:
+  fieldnames = ['name', 'univ_file', 'tax_rate', 'rate_date', 'tax_credit', 'credit_limit']
+  writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+  writer.writeheader()
+  for row in final_data:
+    writer.writerow(row)
